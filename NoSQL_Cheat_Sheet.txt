@@ -1,0 +1,154 @@
+1) SQL 1 [A simple select statement]:
+
+SQL:
+
+select custid,createdOn from table_name  ;
+
+NoSQL Aggregate Pipeline:
+
+Aggregate Pipeline:
+
+db.getCollection('collectionname').aggregate([{$project: {"custid" : 1, _id : 0,"createdon" : 1}}]
+
+[or use without pipline] 
+
+db.getCollection('colectionname').find({"custid" : 1, _id : 0,"createdon" : 1});
+
+2) SQL 2 [ How to get count of records from collection using filters (Like Where CLause in SQL) ] :
+
+select count(*) from table_name where creratedon >= '2019-04-15' and custid is null ;
+
+NoSQL Aggregate Pipeline:
+
+[{$match: {
+  "createdOn": {'$gte': ISODate('2019-04-15')
+}}}, {$match: {
+   "custid" :{$ne: null}
+}}, {$count: 'total'}]
+
+
+3) SQL3 [ Greater than and less than Operator]
+
+
+SQL : 
+
+select personId from table_name where createdon >= '2019-03-31T23:59:00.000'  and createdon <= '2019-04-02T23:59:00.000' ;
+
+NoSQL Aggregate Pipeline:
+
+db.getCollection('collectionname').aggregate(
+[{$project: {"personId " : 1, _id : 0},
+{$match: {
+  createdon: {
+    $gte: ISODate('2019-03-31T00:00:00.000Z'),
+    $lte: ISODate('2019-04-02T23:59:00.000Z')
+  }];
+
+
+
+4) SQL4 [GROUP BY count] 
+
+SQL :  select stats,count(*) from xxx_table group by status
+
+Aggregate Pipeline:
+
+db.getCollection("xxx_collection").aggregate(
+    [
+        { 
+            "$group" : {
+                "_id" : {
+                   "status" : "$status"
+                }, 
+                "count" : {
+                    "$sum" : 1.0
+                }
+            }
+        }
+    ], 
+    { 
+        "allowDiskUse" : false
+    }
+);
+
+
+5) SQL5 [LIKE Statement]
+
+
+SQL:
+select * from table where email like  '%Atony%'
+
+
+NoSQL:
+
+db.collection.find({email:/.*Atony.*/});
+
+
+
+6) select * from table where (personid exists) ( This is different from where personid is not null)
+
+
+
+[{$match: { "personId": { "$exists": true } }  }]
+
+
+7) select date(createdon) from table ; To get date from timestamp
+
+{
+  new_createdon : {$dateToString:{format:"%Y-%m-%d",date: "$createdOn"}}}
+
+
+8) select * from table where (ZipCode like '%--%' or mailingZipCode like '%--%') ;
+
+{$match: {
+  "$or" :[{"ZipCode" : /--/},
+  {"mailingZipCode" : /--/}]
+}}
+
+
+
+9) select column1,column2,column3 from table group by column1,column2,column3 having count(*) > 1 ;
+
+
+// Requires official MongoShell 3.6+
+use dbname;
+db.getCollection("collectionname").aggregate(
+    [
+        { 
+            "$match" : {
+                "column1" : {
+                    "$gte" : ISODate("2019-11-01T00:00:00.314+0000")
+                }
+            }
+        }, 
+        { 
+            "$group" : {
+                "_id" : {
+                    "column1" : "$column1", 
+                    "column2" : "$column2", 
+                    "column3" : "$column3"
+                }, 
+                "count" : {
+                    "$sum" : 1.0
+                }
+            }
+        }, 
+        { 
+            "$match" : {
+                "count" : {
+                    "$gt" : 1.0
+                }
+            }
+        }
+    ], 
+    { 
+        "allowDiskUse" : false
+    }
+);
+
+
+
+10 ) update tablename set status = 'DISABLED' where column1 in (value1,value2) ;
+
+Below is Mongo Query
+
+db.collectionname.updateMany({"column1": { $in: [value1,value2"]}}, {$set: {"status": "DISABLED"}});
